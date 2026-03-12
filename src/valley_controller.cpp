@@ -1,8 +1,8 @@
 #include "valley_controller.h"
 
 ValleyController::ValleyController() {
-    _mainRelayState = true;
-    _lastDirection = DIR_CW;  // По умолчанию по часовой
+    _mainRelayState = false; // Изначально ВЫКЛ
+    _lastDirection = DIR_CW; // По умолчанию по часовой
 }
 
 void ValleyController::begin() {
@@ -14,49 +14,52 @@ void ValleyController::initRelays() {
     pinMode(PIN_RELAY_START, OUTPUT);
     pinMode(PIN_RELAY_DIR_CW, OUTPUT);
     pinMode(PIN_RELAY_DIR_CCW, OUTPUT);
-    
+
     // Все выключены (HIGH для active LOW)
-    digitalWrite(PIN_RELAY_MAIN, LOW);     // Основное ВКЛ
-    digitalWrite(PIN_RELAY_START, HIGH);   // Старт ВЫКЛ
-    digitalWrite(PIN_RELAY_DIR_CW, HIGH);  // Направление ВЫКЛ
-    digitalWrite(PIN_RELAY_DIR_CCW, HIGH); // Направление ВЫКЛ
-    
-    _mainRelayState = true;
+    // Пин 19 теперь тоже выключен изначально!
+    digitalWrite(PIN_RELAY_MAIN, HIGH);  // ВЫКЛ (было LOW - ВКЛ)
+    digitalWrite(PIN_RELAY_START, HIGH); // ВЫКЛ
+    digitalWrite(PIN_RELAY_DIR_CW, HIGH); // ВЫКЛ
+    digitalWrite(PIN_RELAY_DIR_CCW, HIGH); // ВЫКЛ
+
+    _mainRelayState = false;
 }
 
 void ValleyController::start(uint8_t direction) {
     Serial.print("Valley: START with direction ");
     Serial.println(direction == DIR_CW ? "CW" : "CCW");
-    
+
     // ОДНОВРЕМЕННО включаем реле старта и направления!
     int dirPin = (direction == DIR_CW) ? PIN_RELAY_DIR_CW : PIN_RELAY_DIR_CCW;
-    
+
     // Включаем оба реле одновременно
     setRelay(PIN_RELAY_START, true);
     setRelay(dirPin, true);
-    
+
     Serial.println("Relays 21 and direction relay ON simultaneously");
-    
+
     // Ждем 3 секунды
     delay(START_PULSE_DURATION_MS);
-    
+
     // Выключаем оба одновременно
     setRelay(PIN_RELAY_START, false);
     setRelay(dirPin, false);
-    
+
     Serial.println("Relays OFF");
-    
+
     // Сохраняем направление
     _lastDirection = direction;
 }
 
 void ValleyController::stop() {
-    Serial.println("Valley: STOP sequence");
-    
-    // Выключаем основное реле на 3 секунды
-    setRelay(PIN_RELAY_MAIN, false);
-    delay(START_PULSE_DURATION_MS);
-    setRelay(PIN_RELAY_MAIN, true);
+    Serial.println("Valley: STOP sequence - Activating pin 19 for 3 seconds");
+
+    // Включаем пин 19 на 3 секунды (НОВАЯ ЛОГИКА!)
+    setRelay(PIN_RELAY_MAIN, true);  // ВКЛ (LOW для active LOW)
+    delay(STOP_PULSE_DURATION_MS);
+    setRelay(PIN_RELAY_MAIN, false); // ВЫКЛ (HIGH для active LOW)
+
+    Serial.println("Pin 19 deactivated");
 }
 
 void ValleyController::changeDirection() {
@@ -80,7 +83,7 @@ void ValleyController::setLastDirection(uint8_t dir) {
 void ValleyController::setRelay(int pin, bool state) {
     // Active LOW: LOW = ON, HIGH = OFF
     digitalWrite(pin, state ? LOW : HIGH);
-    
+
     if (pin == PIN_RELAY_MAIN) {
         _mainRelayState = state;
     }
