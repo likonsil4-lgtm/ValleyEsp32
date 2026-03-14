@@ -29,23 +29,29 @@ void ValleyController::start(uint8_t direction) {
     Serial.print("Valley: START with direction ");
     Serial.println(direction == DIR_CW ? "CW" : "CCW");
 
-    // ОДНОВРЕМЕННО включаем реле старта и направления!
     int dirPin = (direction == DIR_CW) ? PIN_RELAY_DIR_CW : PIN_RELAY_DIR_CCW;
 
-    // Включаем оба реле одновременно
+    // Шаг 1: Включаем только пин 21 (старт)
     setRelay(PIN_RELAY_START, true);
-    setRelay(dirPin, true);
-
-    Serial.println("Relays 21 and direction relay ON simultaneously");
+    Serial.println("Pin 21 ON");
 
     // Ждем 3 секунды
-    delay(START_PULSE_DURATION_MS);
+    delay(3000);
 
-    // Выключаем оба одновременно
-    setRelay(PIN_RELAY_START, false);
+    // Шаг 2: Включаем пин направления (22 или 23) через 3 сек после пина 21
+    setRelay(dirPin, true);
+    Serial.println("Direction pin ON (3s after pin 21)");
+
+    // Ждем еще 4 секунды (всего пин 21 работает 7 секунд)
+    delay(4000);
+
+    // Шаг 3: Выключаем пин направления (работал 4 секунды)
     setRelay(dirPin, false);
+    Serial.println("Direction pin OFF");
 
-    Serial.println("Relays OFF");
+    // Шаг 4: Выключаем пин 21 (работал 7 секунд всего)
+    setRelay(PIN_RELAY_START, false);
+    Serial.println("Pin 21 OFF");
 
     // Сохраняем направление
     _lastDirection = direction;

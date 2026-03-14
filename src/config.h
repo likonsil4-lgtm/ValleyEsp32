@@ -8,7 +8,7 @@
 #define DEVICE_NAME "Valley 1"
 
 // ============== WIFI CONFIGURATION ==============
-#define WIFI_SSID "E25RA"
+#define WIFI_SSID "Frid1"
 #define WIFI_PASSWORD "Era03072025+"
 
 // ============== MQTT CONFIGURATION ==============
@@ -33,7 +33,7 @@
 // ============== TIMING CONFIGURATION ==============
 #define MOTOR_STATUS_TIMEOUT_MS 10000
 #define START_PULSE_DURATION_MS 3000 // 3 секунды для старта
-#define STOP_PULSE_DURATION_MS 3000  // 3 секунды для стопа (пин 19)
+#define STOP_PULSE_DURATION_MS 5000  // 3 секунды для стопа (пин 19)
 #define DIRECTION_PULSE_DURATION_MS 5000 // 5 секунд для направления
 #define MQTT_PUBLISH_INTERVAL_MS 3000 
 #define WIFI_RECONNECT_INTERVAL_MS 5000
