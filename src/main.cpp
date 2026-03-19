@@ -165,15 +165,17 @@ void processCalibration(const char* payload) {
         return;
     }
     
-    float startAngle = doc["startAngle"] | DEFAULT_START_ANGLE;
-    float rotationTime = doc["rotationTimeMinutes"] | DEFAULT_ROTATION_TIME_MINUTES;
+    float startAngle = doc["startAngle"];
+    float rotationTimeHours = doc["rotationTimeHours"]; 
     
-    tracker.setCalibration(startAngle, rotationTime);
+    // Передаём в трекер (часы, не минуты!)
+    tracker.setCalibration(startAngle, rotationTimeHours);
     
-    Serial.print("Calibration: angle=");
+    Serial.print("Calibration received: angle=");
     Serial.print(startAngle);
-    Serial.print(", time=");
-    Serial.println(rotationTime);
+    Serial.print("°, time=");
+    Serial.print(rotationTimeHours);
+    Serial.println(" hours");
 }
 
 // НОВОЕ: публикация только при изменениях - мгновенная реакция!

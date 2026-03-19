@@ -3,13 +3,10 @@
 PositionTracker::PositionTracker() {
     _currentAngle = 0.0;
     _startAngle = 220.0;
-    _rotationTimeMinutes = 74.0;
+    _rotationTimeHours = 74.0;  // ← По умолчанию 74 часа (не минуты!)
     _lastUpdateTime = 0;
     _wasRunning = false;
-    _lastValidDirection = DIR_UNKNOWN;  // ← Теперь объявлено в .h
-    _totalRotationTime = 0;               // ← Теперь объявлено в .h
-    _fullRotations = 0;                   // ← Новое
-    _absoluteAngle = 0.0;                 // ← Новое
+    _lastValidDirection = DIR_UNKNOWN;
 }
 
 void PositionTracker::begin() {
@@ -17,8 +14,12 @@ void PositionTracker::begin() {
     _lastUpdateTime = millis();
     _wasRunning = false;
     _lastValidDirection = DIR_UNKNOWN;
-    _fullRotations = 0;
-    _absoluteAngle = _startAngle;
+    
+    Serial.print("Tracker begin: startAngle=");
+    Serial.print(_startAngle);
+    Serial.print(", rotationTime=");
+    Serial.print(_rotationTimeHours);
+    Serial.println(" hours");
 }
 
 void PositionTracker::update(bool motorRunning, uint8_t direction) {
@@ -34,6 +35,7 @@ void PositionTracker::update(bool motorRunning, uint8_t direction) {
         return;
     }
     
+    // Мотор только что запустился
     if (!_wasRunning) {
         _wasRunning = true;
         _lastValidDirection = direction;
@@ -41,72 +43,77 @@ void PositionTracker::update(bool motorRunning, uint8_t direction) {
         Serial.print("Tracker: START at angle ");
         Serial.print(_currentAngle);
         Serial.print(", direction ");
-        Serial.println(direction == DIR_CW ? "CW" : "CCW");
+        Serial.print(direction == DIR_CW ? "CW" : "CCW");
+        Serial.print(", rotationTime=");
+        Serial.print(_rotationTimeHours);
+        Serial.println("h");
         return;
     }
     
+    // Направление поменялось
     if (direction != _lastValidDirection) {
         Serial.print("Tracker: Direction changed to ");
         Serial.println(direction == DIR_CW ? "CW" : "CCW");
         _lastValidDirection = direction;
     }
     
+    // ═══════════════════════════════════════════════════════════
+    // РАСЧЁТ УГЛА - только в часах!
+    // ═══════════════════════════════════════════════════════════
     unsigned long deltaMs = now - _lastUpdateTime;
     _lastUpdateTime = now;
-    _totalRotationTime += deltaMs;
     
-    if (deltaMs > 10000) {
-        Serial.print("Tracker: Large time jump: ");
+    // Защита от скачков времени
+    if (deltaMs > 30000) {  // Пропускаем если > 30 секунд
+        Serial.print("Tracker: Time jump ");
         Serial.print(deltaMs);
         Serial.println("ms, skipping");
         return;
     }
     
-    float deltaHours = deltaMs / 3600000.0;
-    float rotationTimeHours = _rotationTimeMinutes / 60.0;
-    float degreesPerHour = 360.0 / rotationTimeHours;
+    // Скорость: 360 градусов / rotationTimeHours
+    // Пример: 74 часа на оборот = 360/74 = 4.86 градуса/час
+    float degreesPerHour = 360.0 / _rotationTimeHours;
+    
+    // Время в часах (миллисекунды → часы)
+    float deltaHours = deltaMs / 3600000.0;  // 1 час = 3,600,000 мс
+    
+    // Изменение угла
     float angleChange = degreesPerHour * deltaHours;
     
-    float previousAngle = _currentAngle;
-    
+    // Применяем
     if (direction == DIR_CW) {
         _currentAngle += angleChange;
-        _absoluteAngle += angleChange;
-        
         if (_currentAngle >= 360.0) {
             _currentAngle -= 360.0;
-            _fullRotations++;
             Serial.println("Tracker: 360° passed CW");
         }
-    } else {
+    } else {  // CCW
         _currentAngle -= angleChange;
-        _absoluteAngle -= angleChange;
-        
         if (_currentAngle < 0.0) {
             _currentAngle += 360.0;
-            _fullRotations--;
             Serial.println("Tracker: 0° passed CCW");
         }
     }
 }
 
-void PositionTracker::setCalibration(float startAngle, float rotationTimeMinutes) {
+// ═══════════════════════════════════════════════════════════
+// КАЛИБРОВКА - принимаем только часы!
+// ═══════════════════════════════════════════════════════════
+void PositionTracker::setCalibration(float startAngle, float rotationTimeHours) {
     _startAngle = startAngle;
-    _rotationTimeMinutes = rotationTimeMinutes;
-    Serial.print("Calibration: start=");
-    Serial.print(startAngle);
-    Serial.print(", time=");
-    Serial.print(rotationTimeMinutes);
-    Serial.println("min");
-}
-
-void PositionTracker::setCalibrationHours(float startAngle, float rotationTimeHours) {
-    setCalibration(startAngle, rotationTimeHours * 60.0);
+    _rotationTimeHours = rotationTimeHours;  // ← Часы, без конвертации!
+    _currentAngle = startAngle;  // ← Сразу сбрасываем в стартовый угол!
+    
+    Serial.print("Calibration: startAngle=");
+    Serial.print(_startAngle);
+    Serial.print("°, rotationTime=");
+    Serial.print(_rotationTimeHours);
+    Serial.println(" hours");
 }
 
 void PositionTracker::resetToAngle(float angle) {
     _currentAngle = normalizeAngle(angle);
-    _absoluteAngle = angle;  // Сбрасываем абсолютный тоже
     Serial.print("Tracker: Reset to ");
     Serial.println(_currentAngle);
 }
@@ -119,12 +126,8 @@ float PositionTracker::getStartAngle() {
     return _startAngle;
 }
 
-float PositionTracker::getRotationTime() {
-    return _rotationTimeMinutes;
-}
-
 float PositionTracker::getRotationTimeHours() {
-    return _rotationTimeMinutes / 60.0;
+    return _rotationTimeHours;  // ← Возвращаем часы
 }
 
 float PositionTracker::normalizeAngle(float angle) {
