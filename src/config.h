@@ -31,12 +31,12 @@
 #define PIN_RELAY_DIR_CCW 23 // Реле направления против часовой
 
 // ============== TIMING CONFIGURATION ==============
-#define MOTOR_STATUS_TIMEOUT_MS 10000
-#define START_PULSE_DURATION_MS 3000 // 3 секунды для старта
-#define STOP_PULSE_DURATION_MS 5000  // 3 секунды для стопа (пин 19)
-#define DIRECTION_PULSE_DURATION_MS 5000 // 5 секунд для направления
-#define MQTT_PUBLISH_INTERVAL_MS 3000 
-#define WIFI_RECONNECT_INTERVAL_MS 5000
+#define MQTT_PUBLISH_INTERVAL_MS 500
+#define MOTOR_STATUS_TIMEOUT_MS 5000    
+#define START_PULSE_DURATION_MS 3000    
+#define STOP_PULSE_DURATION_MS 3000     
+#define DIRECTION_PULSE_DURATION_MS 4000 
+#define WIFI_RECONNECT_INTERVAL_MS 3000 
 
 // ============== DIRECTION STATE ==============
 #define DIR_UNKNOWN 0
