@@ -183,16 +183,13 @@ void publishIfChanged() {
         Serial.println("PUBLISH: motor status changed");
     }
     
-    // Направление (только если известно)
-    uint8_t currentDir = data.direction;
-    if (currentDir == DIR_UNKNOWN && controller.isInPulseSequence()) {
-        currentDir = controller.getActiveDirection();
-    }
+    // Направление - ТОЛЬКО из датчиков (data.direction), без связи с controller!
+    // УБРАНО: if (currentDir == DIR_UNKNOWN && controller.isInPulseSequence())
     
-    if (currentDir != lastDirection && currentDir != DIR_UNKNOWN) {
-        const char* dirStr = (currentDir == DIR_CW) ? "clockwise" : "counter_clockwise";
+    if (data.direction != lastDirection && data.direction != DIR_UNKNOWN) {
+        const char* dirStr = (data.direction == DIR_CW) ? "clockwise" : "counter_clockwise";
         mqtt.publish("direction", dirStr, true);
-        lastDirection = currentDir;
+        lastDirection = data.direction;
         changed = true;
         Serial.println("PUBLISH: direction changed");
     }
@@ -227,9 +224,13 @@ void publishAllStatus() {
     SensorData data = sensors.update();
     float currentAngle = tracker.getCurrentAngle();
     
+    // Направление - ТОЛЬКО из датчиков, без связи с controller!
+    // УБРАНА вся логика с controller.getActiveDirection()
+    
     mqtt.publish("online", "true", true);
     mqtt.publish("motor_status", data.motorRunning ? "running" : "stopped", true);
     
+    // Направление только из датчиков
     const char* dirStr;
     switch(data.direction) {
         case DIR_CW: dirStr = "clockwise"; break;
@@ -244,7 +245,7 @@ void publishAllStatus() {
     
     // Обновляем last-переменные
     lastMotorRunning = data.motorRunning;
-    lastDirection = data.direction;
+    lastDirection = data.direction;  // Только из датчиков!
     lastPressure = data.pressure;
     lastAngle = currentAngle;
 }

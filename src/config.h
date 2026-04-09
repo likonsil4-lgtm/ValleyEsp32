@@ -4,11 +4,11 @@
 #include <Arduino.h>
 
 // ============== DEVICE CONFIGURATION ==============
-#define DEVICE_ID "valley_4"
-#define DEVICE_NAME "Valley 4"
+#define DEVICE_ID "valley_1"
+#define DEVICE_NAME "Valley 1"
 
 // ============== WIFI CONFIGURATION ==============
-#define WIFI_SSID "E25RA"
+#define WIFI_SSID "Frid1"
 #define WIFI_PASSWORD "Era03072025+"
 
 // ============== MQTT CONFIGURATION ==============
@@ -33,7 +33,7 @@
 // ============== TIMING CONFIGURATION ==============
 #define MQTT_PUBLISH_INTERVAL_MS 500
 #define MOTOR_STATUS_TIMEOUT_MS 5000    
-#define STOP_PULSE_DURATION_MS 3000     
+#define STOP_PULSE_DURATION_MS 5000     
 #define WIFI_RECONNECT_INTERVAL_MS 3000 
 #define PULSE_DURATION_MS 1000
 #define PULSE_PAUSE_MS 2000 
