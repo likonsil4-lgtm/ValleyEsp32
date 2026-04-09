@@ -63,18 +63,17 @@ void loop() {
     
     mqtt.loop();
     
-    // НОВОЕ: обновление неблокирующего контроллера
-    controller.update();
+    controller.update();  // Обрабатывает импульсы
     
     // Обновление сенсоров и трекера
     SensorData data = sensors.update();
     
     // Обновляем трекер только если мотор реально работает
-    // (не в процессе стартовой последовательности!)
-    bool realMotorRunning = data.motorRunning && !controller.isInStartingSequence();
+    // (не в процессе импульсной последовательности!)
+    bool realMotorRunning = data.motorRunning && !controller.isInPulseSequence();
     tracker.update(realMotorRunning, data.direction);
     
-    // НОВОЕ: мгновенная публикация при изменениях!
+    // Мгновенная публикация при изменениях
     publishIfChanged();
     
     // Периодическая публикация (heartbeat) - каждые 500мс
@@ -127,32 +126,23 @@ void mqttCallback(char* topic, byte* payload, unsigned int length) {
 }
 
 void processCommand(const char* command) {
-    SensorData currentState = sensors.update();
+    // УБРАТЬ: SensorData currentState = sensors.update();
     
-    if (strcmp(command, "START") == 0) {
-        uint8_t dirToUse;
-        if (currentState.direction != DIR_UNKNOWN) {
-            dirToUse = currentState.direction;
-            controller.setLastDirection(dirToUse);
-        } else {
-            dirToUse = controller.getLastDirection();
-        }
-        
-        Serial.print("Command START with direction: ");
-        Serial.println(dirToUse == DIR_CW ? "CW" : "CCW");
-        
-        controller.start(dirToUse);
+    if (strcmp(command, CMD_START_CW) == 0) {      // "STARTCW"
+        Serial.println("Command: STARTCW");
+        controller.startCW();
     } 
-    else if (strcmp(command, "STOP") == 0) {
+    else if (strcmp(command, CMD_START_CCW) == 0) { // "STARTCCW"
+        Serial.println("Command: STARTCCW");
+        controller.startCCW();
+    } 
+    else if (strcmp(command, CMD_STOP) == 0) {     // "STOP" - без изменений
         controller.stop();
     } 
-    else if (strcmp(command, "CHANGE_DIRECTION") == 0) {
-        controller.changeDirection();
-    }
-    else if (strcmp(command, "PING") == 0) {
-        // Ответ на пинг - сразу публикуем статус
+    else if (strcmp(command, CMD_PING) == 0) {
         publishAllStatus();
     }
+    // УБРАТЬ: else if (strcmp(command, "CHANGE_DIRECTION") == 0)
 }
 
 void processCalibration(const char* payload) {
@@ -187,17 +177,22 @@ void publishIfChanged() {
     // Мотор вкл/выкл
     if (data.motorRunning != lastMotorRunning) {
         mqtt.publish("motor_status", data.motorRunning ? "running" : "stopped", true);
-        mqtt.publish("online", "true", true);  // Подтверждаем online
+        mqtt.publish("online", "true", true);
         lastMotorRunning = data.motorRunning;
         changed = true;
         Serial.println("PUBLISH: motor status changed");
     }
     
     // Направление (только если известно)
-    if (data.direction != lastDirection && data.direction != DIR_UNKNOWN) {
-        const char* dirStr = (data.direction == DIR_CW) ? "clockwise" : "counter_clockwise";
+    uint8_t currentDir = data.direction;
+    if (currentDir == DIR_UNKNOWN && controller.isInPulseSequence()) {
+        currentDir = controller.getActiveDirection();
+    }
+    
+    if (currentDir != lastDirection && currentDir != DIR_UNKNOWN) {
+        const char* dirStr = (currentDir == DIR_CW) ? "clockwise" : "counter_clockwise";
         mqtt.publish("direction", dirStr, true);
-        lastDirection = data.direction;
+        lastDirection = currentDir;
         changed = true;
         Serial.println("PUBLISH: direction changed");
     }
@@ -207,6 +202,7 @@ void publishIfChanged() {
         mqtt.publish("pressure", data.pressure, true);
         lastPressure = data.pressure;
         changed = true;
+        Serial.println("PUBLISH: pressure changed");
     }
     
     // Позиция (если мотор работает или изменилась значительно)
@@ -214,12 +210,13 @@ void publishIfChanged() {
         mqtt.publish("position", currentAngle, true);
         lastAngle = currentAngle;
         changed = true;
+        Serial.println("PUBLISH: position changed");
     }
     
     // Время работы (только если мотор работает)
     if (data.motorRunning && data.runtimeSeconds > 0) {
         static unsigned long lastRuntimePublish = 0;
-        if (millis() - lastRuntimePublish > 1000) {  // Раз в секунду
+        if (millis() - lastRuntimePublish > 1000) {
             mqtt.publish("runtime", (int)data.runtimeSeconds, true);
             lastRuntimePublish = millis();
         }

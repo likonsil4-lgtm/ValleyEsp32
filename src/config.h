@@ -4,11 +4,11 @@
 #include <Arduino.h>
 
 // ============== DEVICE CONFIGURATION ==============
-#define DEVICE_ID "valley_1"
-#define DEVICE_NAME "Valley 1"
+#define DEVICE_ID "valley_4"
+#define DEVICE_NAME "Valley 4"
 
 // ============== WIFI CONFIGURATION ==============
-#define WIFI_SSID "Frid1"
+#define WIFI_SSID "E25RA"
 #define WIFI_PASSWORD "Era03072025+"
 
 // ============== MQTT CONFIGURATION ==============
@@ -33,16 +33,19 @@
 // ============== TIMING CONFIGURATION ==============
 #define MQTT_PUBLISH_INTERVAL_MS 500
 #define MOTOR_STATUS_TIMEOUT_MS 5000    
-#define START_PULSE_DURATION_MS 3000    
-#define STOP_PULSE_DURATION_MS 5000     
-#define DIRECTION_PULSE_DURATION_MS 4000 
+#define STOP_PULSE_DURATION_MS 3000     
 #define WIFI_RECONNECT_INTERVAL_MS 3000 
+#define PULSE_DURATION_MS 1000
+#define PULSE_PAUSE_MS 2000 
 
 // ============== DIRECTION STATE ==============
 #define DIR_UNKNOWN 0
 #define DIR_CW 1 // По часовой (налево)
 #define DIR_CCW 2 // Против часовой (направо)
-
+#define CMD_START_CW "STARTCW"
+#define CMD_START_CCW "STARTCCW"
+#define CMD_STOP "STOP"
+#define CMD_PING "PING"
 // ============== DEFAULT CALIBRATION ==============
 #define DEFAULT_START_ANGLE 220.0
 #define DEFAULT_ROTATION_TIME_MINUTES 74.0
